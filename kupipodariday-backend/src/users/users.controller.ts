@@ -1,74 +1,45 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post('find')
   async findUsers(@Body() searchDto: { query: string }) {
-    const users = await this.usersService.findMany({
-      where: [
-        { username: searchDto.query },
-        { email: searchDto.query },
-      ],
-    });
-    
-    return users.map(({ password, ...user }) => user);
+    return this.usersService.searchUsers(searchDto.query);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('me')
   getProfile(@Request() req) {
-    const { password, ...result } = req.user;
-    return result;
+    return this.usersService.getProfile(req.user.id);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('me/wishes')
   async getMyWishes(@Request() req) {
-    const user = await this.usersService.findOne({
-      where: { id: req.user.id },
-      relations: ['wishes', 'wishes.owner', 'wishes.offers'],
-    });
-    return user.wishes;
+    return this.usersService.getUserWishes(req.user.id);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Patch('me')
   async updateProfile(@Request() req, @Body() updateUserDto: UpdateUserDto) {
-    const user = await this.usersService.updateOne(
-      { where: { id: req.user.id } },
-      updateUserDto,
-    );
-    const { password, ...result } = user;
-    return result;
+    return this.usersService.updateProfile(req.user.id, updateUserDto);
   }
 
   @Get(':username')
   async findByUsername(@Param('username') username: string) {
-    const user = await this.usersService.findOne({
-      where: { username },
-      relations: ['wishes', 'wishlists'],
-    });
-    const { password, ...result } = user;
-    return result;
+    return this.usersService.getUserByUsername(username);
   }
 
   @Get(':username/wishes')
   async getUserWishes(@Param('username') username: string) {
-    const user = await this.usersService.findOne({
-      where: { username },
-      relations: ['wishes', 'wishes.owner', 'wishes.offers'],
-    });
-    return user.wishes;
+    return this.usersService.getUserWishesByUsername(username);
   }
 
   @Get()
   findAll() {
-    return this.usersService.findMany({});
+    return this.usersService.findAll();
   }
 }

@@ -1,8 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UseGuards, NotFoundException } from '@nestjs/common';
-import { WishesService } from './wishes.service';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { WishesService, WishWithSanitizedOffers } from './wishes.service'; // ✅ Импортируем тип
 import { CreateWishDto } from './dto/create-wish.dto';
 import { UpdateWishDto } from './dto/update-wish.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { User } from '../users/entities/user.entity';
+
+interface RequestWithUser extends Request {
+  user: User;
+}
 
 @Controller('wishes')
 export class WishesController {
@@ -18,25 +23,16 @@ export class WishesController {
     return this.wishesService.findTop();
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    console.log('Загрузка подарка с ID:', id);
-    const wishId = parseInt(id, 10);
-    
-    if (isNaN(wishId)) {
-      throw new NotFoundException('Неверный ID подарка');
-    }
-    
-    return this.wishesService.findOneWithOffers(wishId);
+  async findOne(@Param('id') id: string): Promise<WishWithSanitizedOffers> {
+    return this.wishesService.findOneWithOffers(parseInt(id, 10));
   }
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  async create(@Body() createWishDto: CreateWishDto, @Req() req: any) {
-    return this.wishesService.create({
-      ...createWishDto,
-      owner: req.user,
-    });
+  async create(@Body() createWishDto: CreateWishDto, @Request() req: RequestWithUser) {
+    return this.wishesService.createWish(createWishDto, req.user);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -44,40 +40,20 @@ export class WishesController {
   async update(
     @Param('id') id: string,
     @Body() updateWishDto: UpdateWishDto,
-    @Req() req: any,
+    @Request() req: RequestWithUser,
   ) {
-    const wishId = parseInt(id, 10);
-    return this.wishesService.updateOne(
-      { where: { id: wishId, owner: { id: req.user.id } } },
-      updateWishDto,
-    );
+    return this.wishesService.updateWish(parseInt(id, 10), updateWishDto, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  async remove(@Param('id') id: string, @Req() req: any) {
-    const wishId = parseInt(id, 10);
-    return this.wishesService.removeOne({
-      where: { id: wishId, owner: { id: req.user.id } },
-    });
+  async remove(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.wishesService.removeWish(parseInt(id, 10), req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/copy')
-  async copy(@Param('id') id: string, @Req() req: any) {
-    const wishId = parseInt(id, 10);
-    const originalWish = await this.wishesService.findOne({
-      where: { id: wishId },
-      relations: ['owner'],
-    });
-
-    await this.wishesService.incrementCopied(wishId);
-
-    const { id: _, copied, raised, offers, ...wishData } = originalWish as any;
-
-    return this.wishesService.create({
-      ...wishData,
-      owner: req.user,
-    });
+  async copy(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.wishesService.copyWish(parseInt(id, 10), req.user);
   }
 }

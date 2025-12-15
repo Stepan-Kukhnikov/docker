@@ -6,6 +6,7 @@ import { Wish } from '../wishes/entities/wish.entity';
 import { User } from '../users/entities/user.entity';
 import { CreateOfferDto } from './dto/create-offer.dto';
 import { UpdateOfferDto } from './dto/update-offer.dto';
+import { excludePassword } from '../utils/exclude-password.helper';
 
 @Injectable()
 export class OffersService {
@@ -16,7 +17,7 @@ export class OffersService {
     private readonly wishRepository: Repository<Wish>,
   ) {}
 
-  async create(createOfferDto: CreateOfferDto, user: User): Promise<Offer> {
+  async createOffer(createOfferDto: CreateOfferDto, user: User) {
     const { itemId, amount, hidden } = createOfferDto;
 
     const wish = await this.wishRepository.findOne({
@@ -51,10 +52,54 @@ export class OffersService {
 
     const saved = await this.offerRepository.save(offer);
 
-    wish.raised = (raised + amount).toFixed(2) as any;
+    wish.raised = parseFloat((raised + amount).toFixed(2));
     await this.wishRepository.save(wish);
 
-    return saved;
+    return {
+      ...saved,
+      user: excludePassword(saved.user),
+      item: saved.item ? {
+        ...saved.item,
+        owner: excludePassword(saved.item.owner),
+      } : undefined,
+    };
+  }
+
+  async findAllOffers() {
+    const offers = await this.findMany({
+      relations: ['user', 'item', 'item.owner'],
+    });
+    
+    return offers.map(offer => ({
+      ...offer,
+      user: excludePassword(offer.user),
+      item: offer.item ? {
+        ...offer.item,
+        owner: excludePassword(offer.item.owner),
+      } : undefined,
+    }));
+  }
+
+  async findOfferById(id: string) {
+    const numericId = parseInt(id, 10);
+    
+    if (isNaN(numericId)) {
+      throw new BadRequestException('Неверный ID');
+    }
+
+    const offer = await this.findOne({
+      where: { id: numericId },
+      relations: ['user', 'item', 'item.owner'],
+    });
+    
+    return {
+      ...offer,
+      user: excludePassword(offer.user),
+      item: offer.item ? {
+        ...offer.item,
+        owner: excludePassword(offer.item.owner),
+      } : undefined,
+    };
   }
 
   async findOne(query: FindOneOptions<Offer>): Promise<Offer> {

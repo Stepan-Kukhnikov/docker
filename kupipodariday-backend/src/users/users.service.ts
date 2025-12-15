@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
+import { Repository, FindOneOptions, FindManyOptions, ILike } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -46,6 +46,68 @@ export class UsersService {
 
   async findMany(query: FindManyOptions<User>): Promise<User[]> {
     return await this.userRepository.find(query);
+  }
+
+  async searchUsers(query: string): Promise<Partial<User>[]> {
+    const users = await this.userRepository.find({
+      where: [
+        { username: ILike(`%${query}%`) },
+        { email: ILike(`%${query}%`) },
+      ],
+    });
+    
+    return users.map(({ password, ...user }) => user);
+  }
+
+  async getProfile(userId: number): Promise<Partial<User>> {
+    const user = await this.findOne({
+      where: { id: userId },
+    });
+    
+    const { password, ...result } = user;
+    return result;
+  }
+
+  async getUserWishes(userId: number) {
+    const user = await this.findOne({
+      where: { id: userId },
+      relations: ['wishes', 'wishes.owner', 'wishes.offers'],
+    });
+    
+    return user.wishes;
+  }
+
+  async updateProfile(userId: number, updateUserDto: UpdateUserDto): Promise<Partial<User>> {
+    const user = await this.updateOne(
+      { where: { id: userId } },
+      updateUserDto,
+    );
+    
+    const { password, ...result } = user;
+    return result;
+  }
+
+  async getUserByUsername(username: string): Promise<Partial<User>> {
+    const user = await this.findOne({
+      where: { username },
+      relations: ['wishes', 'wishlists'],
+    });
+    
+    const { password, ...result } = user;
+    return result;
+  }
+
+  async getUserWishesByUsername(username: string) {
+    const user = await this.findOne({
+      where: { username },
+      relations: ['wishes', 'wishes.owner', 'wishes.offers'],
+    });
+    
+    return user.wishes;
+  }
+
+  async findAll(): Promise<User[]> {
+    return await this.findMany({});
   }
 
   async updateOne(

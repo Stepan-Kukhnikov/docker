@@ -12,14 +12,11 @@ import styles from "./collection.module.css";
 export const Collection = ({ extraClass = "" }) => {
   const [user] = useContext(UserContext);
   const [data, setData] = useState({});
-  // const [pagData, setPagData] = useState({});
-
   const { id } = useParams();
 
   useEffect(() => {
     getCollection(id)
       .then((res) => setData(res))
-      .catch((err) => console.log(err));
   }, []);
 
   return (

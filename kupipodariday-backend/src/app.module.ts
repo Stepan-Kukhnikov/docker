@@ -18,7 +18,7 @@ import { HashModule } from './hash/hash.module';
       host: process.env.DATABASE_HOST || 'localhost',
       port: parseInt(process.env.DATABASE_PORT || '5432', 10),
       username: process.env.DATABASE_USER || 'student',
-      password: process.env.DATABASE_PASSWORD || '',
+      password: process.env.DATABASE_PASSWORD || 'student',
       database: process.env.DATABASE_NAME || 'kupipodariday',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,

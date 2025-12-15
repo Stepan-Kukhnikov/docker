@@ -126,14 +126,18 @@ export const addOffer = (offer) => {
 export const getTopCards = () => {
   return fetch(`${URL}/wishes/top`, {
     method: "GET",
-    headers: headersWithAuthorizeFn(),
+    headers: {
+      "Content-Type": "application/json",
+    },
   }).then(checkResponse);
 };
 
 export const getLastCards = (page = 1) => {
   return fetch(`${URL}/wishes/last`, {
     method: "GET",
-    headers: headersWithAuthorizeFn(),
+    headers: {
+      "Content-Type": "application/json",
+    },
   }).then(checkResponse);
 };
 

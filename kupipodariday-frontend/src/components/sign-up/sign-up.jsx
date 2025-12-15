@@ -82,9 +82,7 @@ export const SignUp = ({ extraClass = "" }) => {
           userData.password
         );
         if (access_token) {
-          const userDto = await getOwnUser();
-          console.log(userDto);
-
+          const userDto = await getOwnUser()
           if (userDto.id) {
             setUser({ ...userDto });
             history.replace({ pathname: "/" });
