@@ -7,6 +7,10 @@ import { WishlistsModule } from './wishlists/wishlists.module';
 import { OffersModule } from './offers/offers.module';
 import { AuthModule } from './auth/auth.module';
 import { HashModule } from './hash/hash.module';
+import { User } from './users/entities/user.entity';
+import { Wish } from './wishes/entities/wish.entity';
+import { Wishlist } from './wishlists/entities/wishlist.entity';
+import { Offer } from './offers/entities/offer.entity';
 
 @Module({
   imports: [
@@ -15,12 +19,12 @@ import { HashModule } from './hash/hash.module';
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DATABASE_HOST || 'localhost',
-      port: parseInt(process.env.DATABASE_PORT || '5432', 10),
-      username: process.env.DATABASE_USER || 'student',
-      password: process.env.DATABASE_PASSWORD || 'student',
-      database: process.env.DATABASE_NAME || 'kupipodariday',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
+      host: process.env.POSTGRES_HOST,
+      port: 5432,
+      username: process.env.POSTGRES_USER,
+      password: process.env.POSTGRES_PASSWORD,
+      database: process.env.POSTGRES_DB,
+      entities: [User, Wish, Wishlist, Offer],
       synchronize: true,
     }),
     UsersModule,
