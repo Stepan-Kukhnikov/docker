@@ -1,4 +1,4 @@
-javascriptmodule.exports = {
+module.exports = {
   apps: [
     {
       name: 'backend',
